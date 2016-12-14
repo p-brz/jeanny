@@ -1,30 +1,119 @@
-/**
- * Blink
- *
- * Turns on an LED on for one second,
- * then off for one second, repeatedly.
- */
-#include "Arduino.h"
+/* Create a WiFi access point and provide a web server on it. */
 
-#define LED_PIN 5
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h> 
+#include <ESP8266WebServer.h>
 
-void setup()
-{
-  // initialize LED digital pin as an output.
-  pinMode(LED_PIN, OUTPUT);
+#define PORT 8266
+
+IPAddress server_IP(192,168,4,3);
+IPAddress gateway(192,168,4,9);
+IPAddress subnet(255,255,255,0);
+
+int jumperPin = 14;
+const int buttonsPins[] = {14, 12};
+const int ledPins[] = {5, 4};
+
+/* Set these to your desired credentials. */
+const char *ssid = "ESPap";
+const char *password = "thereisnospoon";
+
+WiFiServer server(PORT);
+WiFiClient client;
+bool isServer = false;
+
+enum class State{
+    waitPlayer,
+    waitTurn,
+    waitKey
+};
+State currentState;
+
+void setupInterface(){
+    for(int i=0;i < 3; ++i){
+        pinMode(buttonsPins[i], INPUT);
+        pinMode(ledPins[i], OUTPUT);
+    }
 }
 
-void loop()
-{
-  // turn the LED on (HIGH is the voltage level)
-  digitalWrite(LED_PIN, HIGH);
+void setupServer(){
+	Serial.println();
+	Serial.print("Configuring access point...");
+	
+    WiFi.softAPConfig(server_IP, gateway, subnet);
+    
+    /* You can remove the password parameter if you want the AP to be open. */
+    WiFi.softAP(ssid, password);
 
-  // wait for a second
-  delay(1000);
-
-  // turn the LED off by making the voltage LOW
-  digitalWrite(LED_PIN, LOW);
-
-   // wait for a second
-  delay(1000);
+	IPAddress myIP = WiFi.softAPIP();
+	Serial.print("AP IP address: ");
+	Serial.println(myIP);
+	
+	server.begin();
+	Serial.println("Server started");
+	Serial.print("Waiting client...");
+	
+	//wait client
+	do{
+        client = server.available();
+        if(!client){
+            delay(500);
+            Serial.print('.');
+        }
+	}while(!client); 
+	
+	Serial.println();
+	Serial.println("Client connected!");
+	
+	currentState = State::waitPlayer;
 }
+
+void setupClient(){
+    WiFi.begin(ssid, password);
+    
+    Serial.print("Connecting");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println();
+    Serial.println("Connected in AP");
+    
+    Serial.print("Connecting with server");
+    while(!client.connect(server_IP, PORT)){
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println();
+}
+
+void setup() {
+	delay(5000);
+	Serial.begin(115200);
+	
+	setupInterface();
+	
+	pinMode(jumperPin, INPUT);
+	if(digitalRead(jumperPin)){
+        isServer = true;
+        setupServer();
+	}else{
+        isServer = false;
+        setupClient();
+	}
+}
+
+void loop() {
+    if(isServer){
+    }else{
+        // handle client loop
+    }
+}
+
+//void loop(){
+//    for(int i=0;i < 2; ++i){
+//        auto pin = buttonsPins[i];
+//        digitalWrite(ledPins[i], digitalRead(pin));
+//    }
+//}

@@ -2,9 +2,13 @@
 #include "pins.h"
 
 Game::Game(int isServer){
-    this->isServer = isServer;
-    this->buzzer = Buzzer();
-    this->state = State::waitTurn;
+    //this->isServer = isServer;
+    //this->buzzer = Buzzer;
+    if(this->isServer){
+        this->state = State::waitPlayer;
+    }else{
+        this->state = State::waitTurn;
+    }
 
     this->timeoutMilis = 0;
     this->timeoutCounter = 0;
@@ -51,6 +55,8 @@ void Game::waitPlayer(){
         user_started_game = digitalRead(buttonsPins[0]);
     }
 
+    while(digitalRead(buttonsPins[0]) == HIGH){}
+
     digitalWrite(ledPins[0], LOW);
     this->changeState(State::myTurn);
 }
@@ -62,7 +68,7 @@ void Game::myTurn(){
         this->changeTurn();
         this->changeState(State::waitTurn);
     }else{
-        $this->blinkRandomLed();
+        this->blinkRandomLed();
     }
 }
 
@@ -73,8 +79,8 @@ void Game::waitKey(){
     int wasSuccessful = 0;
 
     while(completedLoop == 0){
-        currentButtonInput = digitalRead(buttonsPins[this->currentOnPosition]);
-        incorrectButtonInput = digitalRead(buttonsPins[otherButton]);
+        int currentButtonInput = digitalRead(buttonsPins[this->currentOnPosition]);
+        int incorrectButtonInput = digitalRead(buttonsPins[otherButton]);
 
         if(incorrectButtonInput == HIGH){
             completedLoop = 1;
@@ -106,13 +112,13 @@ void Game::waitKey(){
 void Game::blinkRandomLed(){
     this->currentOnPosition = random(0, 2);
     this->timeoutCounter = 0;
-    digitalWrite(this->ledPins[this->currentOnPosition], HIGH);
+    digitalWrite(ledPins[this->currentOnPosition], HIGH);
     this->changeState(State::waitKey);
 }
 
 /* Sucesso em apertar o botão do led */
 void Game::pressSuccess(){
-    this->buzzer->playNumberedMelody(this->currentOnPosition, 250);
+    // this->buzzer->playNumberedMelody(this->currentOnPosition, 250);
     this->changeState(State::myTurn);
 }
 
@@ -127,9 +133,9 @@ void Game::resetGame(){
 
 /* Fim de jogo */
 void Game::gameOver(){
-    this->buzzer->playNumberedMelody(3, 500);
-    this->buzzer->playNumberedMelody(3, 500);
-    this->buzzer->playNumberedMelody(3, 500);
+    // this->buzzer->playNumberedMelody(3, 500);
+    // this->buzzer->playNumberedMelody(3, 500);
+    // this->buzzer->playNumberedMelody(3, 500);
 
     this->notifyEndGame();
     this->resetGame();
@@ -157,6 +163,7 @@ void Game::changeTurn(){
 
 /* [State] Estou esperando a minha vez */
 void Game::waitTurn(){
+    this->changeState(State::myTurn);
     // TODO: Escutar requisições do tipo "você venceu"
     // Receber timeout atual
 }

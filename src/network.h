@@ -12,13 +12,16 @@ static const IPAddress gateway(192,168,4,9);
 static const IPAddress subnet(255,255,255,0);
 
 /* Set these to your desired credentials. */
-static constexpr const char *ssid = "ESPap";
-static constexpr const char *password = "thereisnospoon";
+//static constexpr const char *ssid = "ESPap";
+static constexpr const char *ssid = "ESP____wifi";
+//static constexpr const char *password = "thereisnospoon";
+
+using JBuffer = StaticJsonBuffer<200>;
 
 class Network{
 public:
 
-    WiFiServer server = {PORT};
+    WiFiServer server{PORT};
     WiFiClient client;
 
     Stream & stream();
@@ -27,9 +30,11 @@ public:
     void setupClient();
 
 public:
-    void waitTurn();
-    void sendChangeTurn(int difficultLevel);
-    JsonObject & receiveObject(StaticJsonBuffer<200> & jsonBuffer);
+    bool waitTurn(int & timeoutMillis);
+    void sendChangeTurn(int timeoutMillis);
+    void notifyEndGame();
+    
+    JsonObject & receiveObject(JBuffer & jsonBuffer);
     
 protected:
     void waitClientConnect();

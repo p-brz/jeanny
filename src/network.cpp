@@ -2,8 +2,12 @@
 
 #include "ArduinoJson.h"
 
+#include <string.h>
+
+
 Stream &Network::stream(){
     return client;
+//    return Serial;
 }
 
 void Network::setupServer(){
@@ -13,22 +17,37 @@ void Network::setupServer(){
     WiFi.softAPConfig(server_IP, gateway, subnet);
     
     /* You can remove the password parameter if you want the AP to be open. */
-    WiFi.softAP(ssid, password);
+    WiFi.softAP(ssid);
 
 	IPAddress myIP = WiFi.softAPIP();
 	Serial.print("AP IP address: ");
 	Serial.println(myIP);
 	
+	Serial.print("Connecting to ");
+    Serial.println(ssid);
+    
+//    WiFi.begin(ssid, password);
+    
+//    while (WiFi.status() != WL_CONNECTED) {
+//        delay(500);
+//        Serial.print(".");
+//    }
+//    Serial.println("");
+  
 	server.begin();
 	Serial.println("Server started");
 	
 	waitClientConnect();
+
+//    Serial.println("Not waiting client");
 }
 
 void Network::setupClient(){
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid);
     
-    Serial.print("Connecting");
+    Serial.print("Connecting to ");
+    Serial.print(ssid);
+    
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
@@ -40,13 +59,13 @@ void Network::setupClient(){
     Serial.print("Connecting with server");
     
     while(!client.connect(server_IP, PORT)){
-        delay(500);
+//        delay(50);
         Serial.print(".");
     }
     Serial.println();
 }
 
-void Network::waitTurn(){
+bool Network::waitTurn(int & timeoutMillis){
     Serial.print("Waiting for my turn...");
     int time = millis();
     while(!stream().available()){
@@ -56,22 +75,56 @@ void Network::waitTurn(){
         }
     }
     
-    StaticJsonBuffer<200> jsonBuffer; 
-    JsonObject& obj = receiveObject(jsonBuffer);
+    JBuffer jsonBuffer; 
+    
+    char buffer[200];
+    auto readedBytes = stream().readBytesUntil('\n', buffer, 200); 
+    buffer[readedBytes] = 0;
 
-    if(obj.success() && obj["evt"] == "change_turn"){
-        Serial.println("Now is my turn!");
+    Serial.print("received: ");
+    Serial.println(buffer);
+    
+    JsonObject& obj = jsonBuffer.parseObject(buffer);
+
+    if(obj.success()){
+        Serial.println("Parse object Ok!");
+        Serial.print("evt: ");
+        const char* evt = obj["evt"];
+        Serial.println(evt);
+        
+        if(strcmp(evt, "change_turn") == 0){
+            Serial.println("Now is my turn!");
+            
+            timeoutMillis = obj["timeout"];
+            
+            Serial.print("timeout=");
+            Serial.println(timeoutMillis);
+            
+            return true;
+        }
     }
+    return false;
 }
 
-void Network::sendChangeTurn(int difficultLevel){
-    StaticJsonBuffer<200> changeEvtBuffer;
+void Network::sendChangeTurn(int timeoutMillis){
+    JBuffer changeEvtBuffer;
     JsonObject & evt = changeEvtBuffer.createObject();
     
     evt["evt"] = "change_turn";
-    evt["level"] = difficultLevel;
+    evt["timeout"] = timeoutMillis;
     
     evt.printTo(stream());  
+    stream().flush();
+}
+
+void Network::notifyEndGame(){
+    JBuffer changeEvtBuffer;
+    JsonObject & evt = changeEvtBuffer.createObject();
+    
+    evt["evt"] = "end_game";
+    
+    evt.printTo(stream()); 
+    stream().flush(); 
 }
 
 void Network::waitClientConnect(){
@@ -81,8 +134,8 @@ void Network::waitClientConnect(){
     do{
         client = server.available();
         if(!client){
-            delay(500);
-            Serial.print('.');
+//            delay(100);
+//            Serial.print('.');
         }
 	}while(!client); 
 	
@@ -91,11 +144,14 @@ void Network::waitClientConnect(){
 }
 
 
-JsonObject & Network::receiveObject(StaticJsonBuffer<200> & jsonBuffer)
+JsonObject & Network::receiveObject(JBuffer & jsonBuffer)
 {
     char buffer[200];
-    auto readedBytes = stream().readBytesUntil('\n', buffer, 200);  
-    JsonObject & obj = jsonBuffer.parseObject(buffer);
-    
-    return obj;
+    auto readedBytes = stream().readBytesUntil('\n', buffer, 200); 
+    buffer[readedBytes] = 0;
+
+    Serial.print("received: ");
+    Serial.println(buffer);
+     
+    return jsonBuffer.parseObject(buffer);
 }

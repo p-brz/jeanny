@@ -4,6 +4,8 @@
 #include "Arduino.h"
 #include "buzzer.h"
 
+#include "network.h"
+
 const int startDifficulty = 2000;
 
 enum class State{
@@ -18,19 +20,26 @@ private:
     State state;
     Buzzer buzzer;
     int currentOnPosition;
-    int isServer;
+    int isServer=1;
 
     int timeoutMilis;
     int timeoutCounter;
     int perTurnDifficultyIncrease;
     int difficultyLimit;
 
+    int myTurnCount = 0;
+
+    Network * peer;
 public:
-    Game(int isServer);
+    Game(Network * peer);
 
     State getCurrentState();
 
     void changeState(State state);
+
+    void setIsServer(int isServer){
+        this->isServer = isServer;
+    }
 
     /* Estado único para o servidor - Aguarda o apertar um botão */
     void waitPlayer();
@@ -66,6 +75,7 @@ public:
     /* Executa a função de estado atual */
     void runState();
 
+    void turnOffAllLeds();
 };
 
 #endif

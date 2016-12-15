@@ -11,3 +11,4 @@ src/pins.h
 src/pitches.h
 src/tmp_main.txt
 platformio.ini
+src/other_main.cpp

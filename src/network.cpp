@@ -4,6 +4,7 @@
 
 #include <string.h>
 
+#define PING_TIME 2000
 
 Stream &Network::stream(){
 //    return client;
@@ -11,6 +12,8 @@ Stream &Network::stream(){
 }
 
 void Network::setupServer(){
+    this->isServer = true;
+    
 	Serial.println();
 	Serial.print("Configuring access point...");
 	
@@ -26,17 +29,15 @@ void Network::setupServer(){
     
 	Serial.print("AP IP address: ");
 	Serial.println(myIP);
-	
   
 	server.begin();
+    
 	Serial.println("Server started");
-	
-//	waitClientConnect();
-
-    Serial.println("Not waiting client");
 }
 
 void Network::setupClient(){
+    this->isServer = false;
+    
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid);
     
@@ -50,66 +51,99 @@ void Network::setupClient(){
     }
     Serial.println();
     Serial.println("Connected in AP");
-    
-    Serial.print("Connecting with server");
-    
-    int beginTime = millis();
-    while(!client.connect(server_IP, PORT)){
-        if(millis() - beginTime > 500){
-            beginTime = millis();
-            Serial.print('.');
-        }
-    }
-    Serial.println();
 }
 
-bool Network::waitTurn(int & timeoutMillis){
-    Serial.print("Waiting for my turn...");
-    int time = millis();
-    while(!stream().available()){
-        if(millis() - time >= 200){
-            time = millis();
-            Serial.print(".");
+void Network::update(){
+    if(isServer){
+        serverUpdate();
+    }
+    else if(millis() - lastTimeRequest > 2000){
+        clientUpdate();
+    }
+}
+
+void Network::sendPing(){
+    // Send the response to the client
+    client.println("{\"evt\":\"ping\"}");
+    delay(1);    
+}
+
+void Network::serverUpdate(){
+    checkConnectionWithClient();
+    
+    if(client.connected()){
+        receiveEvent();
+    
+        if(millis() - lastTimeRequest > PING_TIME){
+            sendPing();
+            lastTimeRequest = millis();
         }
-        if(!client.connected()){
-            Serial.println("Client disconnected");
-            delay(2000);
-            return false;
-        }
-        delay(20);
+    }    
+}
+
+void Network::clientUpdate(){
+    if(!client.connected()){
+        clientConnect();
     }
     
-    Serial.println("data available. Reading...");
-    
-    JBuffer jsonBuffer; 
-    
-    char buffer[200];
-    auto readedBytes = stream().readBytesUntil('\n', buffer, 200); 
-    buffer[readedBytes] = 0;
+    if(client.connected()){
+        receiveEvent();            
+    }    
+}
 
-    Serial.print("received: ");
-    Serial.println(buffer);
-    
-    JsonObject& obj = jsonBuffer.parseObject(buffer);
+void Network::checkConnectionWithClient(){
+    if (!client || !client.connected()) {
+        client = server.available();
+        if(client && client.connected()){
+            lastTimeRequest = millis();
+        }
+    }    
+}
 
-    if(obj.success()){
-        Serial.println("Parse object Ok!");
-        Serial.print("evt: ");
-        const char* evt = obj["evt"];
-        Serial.println(evt);
+void Network::clientConnect(){
+    Serial.print("connecting to server");
+    
+    if (!client.connect(server_IP, PORT)) {
+        Serial.println("connection failed");
+        return;
+    }
+}
+
+void Network::receiveEvent(){
+    if(client.available()){
+        String line = client.readStringUntil('\n');
         
-        if(strcmp(evt, "change_turn") == 0){
-            Serial.println("Now is my turn!");
+        Serial.print("received: ");
+        Serial.println(line);
+
+        JBuffer jsonBuffer; 
+        
+        JsonObject& obj = jsonBuffer.parseObject(line);
+    
+        if(obj.success()){
+            Serial.println("Parse object Ok!");
             
-            timeoutMillis = obj["timeout"];
-            
-            Serial.print("timeout=");
-            Serial.println(timeoutMillis);
-            
-            return true;
-        }
+            if(obj.containsKey("evt")){
+                onEvent(obj["evt"], obj);
+            }
+        }     
+        
+        lastTimeRequest = millis();   
     }
-    return false;
+}
+
+void Network::setOnEvent(const OnEventHandler & handler){
+    this->onEventHandler = handler;
+}
+
+void Network::onEvent(const char * evtName, JsonObject & obj){
+    Serial.print("evt: ");
+    obj.printTo(Serial);
+    Serial.println();
+    
+    if(onEventHandler){
+        onEventHandler(evtName, obj);
+    }
 }
 
 void Network::sendChangeTurn(int timeoutMillis){
@@ -139,34 +173,4 @@ void Network::notifyEndGame(){
     evt.printTo(stream()); 
     stream().println();
     stream().flush(); 
-}
-
-void Network::waitClientConnect(){
-	Serial.print("Waiting client...");
-    
-	//wait client
-	int beginTime = millis();
-    do{
-        client = server.available();
-        if(millis() - beginTime > 500){
-            beginTime = millis();
-            Serial.print('.');
-        }
-	}while(!client); 
-	
-	Serial.println();
-	Serial.println("Client connected!");   
-}
-
-
-JsonObject & Network::receiveObject(JBuffer & jsonBuffer)
-{
-    char buffer[200];
-    auto readedBytes = stream().readBytesUntil('\n', buffer, 200); 
-    buffer[readedBytes] = 0;
-
-    Serial.print("received: ");
-    Serial.println(buffer);
-     
-    return jsonBuffer.parseObject(buffer);
 }

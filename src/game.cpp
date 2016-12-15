@@ -15,6 +15,17 @@ Game::Game(Network * peer)
     this->difficultyLimit = 350;
 }
 
+void Game::begin(){
+    this->peer->setOnEvent([this](const char * evt, Object & obj){
+        this->onEvent(evt, obj);
+    });
+}
+
+void Game::onEvent(const char * evt, Object & obj){
+    Serial.print("Received evt on game: ");
+    Serial.println(evt);
+}
+
 /************************************
 * Helper methods                    *
 *************************************/
@@ -34,24 +45,26 @@ void Game::turnOffAllLeds()
 }
 
 void Game::runState(){
-    switch (this->state) {
-        case State::waitPlayer:
-            this->waitPlayer();
-            break;
-        case State::waitTurn:
-            this->waitTurn();
-            break;
-        case State::myTurn:
-            this->myTurn();
-            break;
-        case State::waitKey:
-            this->waitKey();
-            break;
-    }
+    this->peer->update();
     
-    if(state != State::waitKey){
-        turnOffAllLeds();
-    }
+//    switch (this->state) {
+//        case State::waitPlayer:
+//            this->waitPlayer();
+//            break;
+//        case State::waitTurn:
+//            this->waitTurn();
+//            break;
+//        case State::myTurn:
+//            this->myTurn();
+//            break;
+//        case State::waitKey:
+//            this->waitKey();
+//            break;
+//    }
+    
+//    if(state != State::waitKey){
+//        turnOffAllLeds();
+//    }
 }
 
 /************************************
@@ -109,10 +122,12 @@ void Game::waitKey(){
         completedLoop = 1;
         wasSuccessful = 1;
     }else{
-        Serial.print("Time: ");
-        Serial.print(timeoutCounter);
-        Serial.print("/");
-        Serial.println(timeoutMilis);
+//        Serial.print("Time: ");
+//        Serial.print(timeoutCounter);
+//        Serial.print("/");
+//        Serial.println(timeoutMilis);
+        
+        
         this->timeoutCounter += 10;
         if(this->timeoutCounter > this->timeoutMilis){
             completedLoop = 1;

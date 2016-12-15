@@ -33,6 +33,9 @@ private:
 public:
     Game(Network * peer);
 
+    void begin();
+    void onEvent(const char * evt, Object & obj);
+
     State getCurrentState();
 
     void changeState(State state);

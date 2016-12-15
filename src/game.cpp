@@ -48,15 +48,15 @@ void Game::runState(){
 * State methods                     *
 *************************************/
 void Game::waitPlayer(){
+    Serial.println("Waiting player");
     int user_started_game = LOW;
     digitalWrite(ledPins[0], HIGH);
-
-    Serial.println("- Waiting game start");
     while(user_started_game == LOW){
         user_started_game = digitalRead(buttonsPins[0]);
+        delay(200);
     }
 
-    while(digitalRead(buttonsPins[0]) == HIGH){}
+    while(digitalRead(buttonsPins[0]) == HIGH){delay(200);}
 
     digitalWrite(ledPins[0], LOW);
     this->changeState(State::myTurn);
@@ -64,6 +64,7 @@ void Game::waitPlayer(){
 
 /* Jogador recebe a vez e deve decidir o que fazer com ela */
 void Game::myTurn(){
+    Serial.println("My turn");
     int myRandomValue = random(1, 3);
     if(myRandomValue == 1){
         this->changeTurn();
@@ -75,11 +76,13 @@ void Game::myTurn(){
 
 /* Espera o usuário apertar o botão ou timeout */
 void Game::waitKey(){
+    Serial.println("Waiting key");
     int otherButton = (this->currentOnPosition - 1) * -1;
     int completedLoop = 0;
     int wasSuccessful = 0;
 
     while(completedLoop == 0){
+        delay(10);
         int currentButtonInput = digitalRead(buttonsPins[this->currentOnPosition]);
         int incorrectButtonInput = digitalRead(buttonsPins[otherButton]);
 
@@ -90,8 +93,7 @@ void Game::waitKey(){
             completedLoop = 1;
             wasSuccessful = 1;
         }else{
-            this->timeoutCounter += 1;
-            delay(1);
+            this->timeoutCounter += 10;
             if(this->timeoutCounter > this->timeoutMilis){
                 completedLoop = 1;
                 wasSuccessful = 0;
@@ -164,6 +166,7 @@ void Game::changeTurn(){
 
 /* [State] Estou esperando a minha vez */
 void Game::waitTurn(){
+    Serial.println("Waiting turn");
     this->changeState(State::myTurn);
     // TODO: Escutar requisições do tipo "você venceu"
     // Receber timeout atual

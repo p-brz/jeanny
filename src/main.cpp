@@ -22,6 +22,6 @@ void setup() {
 }
 
 void loop() {
-    Serial.println("- Running main loop");
-    // game.runState();
+    // Serial.println("- Running main loop");
+    game.runState();
 }

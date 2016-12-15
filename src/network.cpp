@@ -20,19 +20,13 @@ void Network::setupServer(){
     WiFi.softAP(ssid);
 
 	IPAddress myIP = WiFi.softAPIP();
+	
+	Serial.print("Setup WiFI AP:");
+    Serial.println(ssid);
+    
 	Serial.print("AP IP address: ");
 	Serial.println(myIP);
 	
-	Serial.print("Connecting to ");
-    Serial.println(ssid);
-    
-//    WiFi.begin(ssid, password);
-    
-//    while (WiFi.status() != WL_CONNECTED) {
-//        delay(500);
-//        Serial.print(".");
-//    }
-//    Serial.println("");
   
 	server.begin();
 	Serial.println("Server started");
@@ -43,6 +37,7 @@ void Network::setupServer(){
 }
 
 void Network::setupClient(){
+    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid);
     
     Serial.print("Connecting to ");
@@ -58,9 +53,12 @@ void Network::setupClient(){
     
     Serial.print("Connecting with server");
     
+    int beginTime = millis();
     while(!client.connect(server_IP, PORT)){
-//        delay(50);
-        Serial.print(".");
+        if(millis() - beginTime > 500){
+            beginTime = millis();
+            Serial.print('.');
+        }
     }
     Serial.println();
 }
@@ -131,11 +129,12 @@ void Network::waitClientConnect(){
 	Serial.print("Waiting client...");
     
 	//wait client
+	int beginTime = millis();
     do{
         client = server.available();
-        if(!client){
-//            delay(100);
-//            Serial.print('.');
+        if(millis() - beginTime > 500){
+            beginTime = millis();
+            Serial.print('.');
         }
 	}while(!client); 
 	

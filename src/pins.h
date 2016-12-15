@@ -3,5 +3,6 @@
 
 const int buttonsPins[] = {14, 12};
 const int ledPins[] = {5, 4};
+const int buzzerPin = 15;
 
 #endif

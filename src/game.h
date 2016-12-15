@@ -1,21 +1,31 @@
 #ifndef _GAME_H_
 #define _GAME_H_
 
+#include "buzzer.h"
+
+const int startDifficulty = 2000;
+
 enum class State{
     waitPlayer,
-    myTurn,
     waitTurn,
+    myTurn,
     waitKey
 };
 
 class Game{
 private:
     State state;
+    Buzzer buzzer;
     int currentOnPosition;
+    int isServer;
+
     int timeoutMilis;
+    int timeoutCounter;
+    int perTurnDifficultyIncrease;
+    int difficultyLimit;
 
 public:
-    Game();
+    Game(int isServer);
 
     State getCurrentState();
 
@@ -48,6 +58,12 @@ public:
 
     /* Sucesso em apertar o botão do led */
     void pressSuccess();
+
+    /* Notifica o fim do jogo para o outro jogador */
+    void notifyEndGame();
+
+    /* Executa a função de estado atual */
+    void runState();
 
 };
 

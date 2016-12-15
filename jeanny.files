@@ -1,3 +1,6 @@
 lib/readme.txt
 src/main.cpp
 platformio.ini
+src/network.h
+src/game_state.h
+src/network.cpp

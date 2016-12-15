@@ -40,7 +40,7 @@ void setup() {
 }
 
 void loop() {
-    Serial.println("- Running main loop");
+//    Serial.println("- Running main loop");
     
     game.runState();
 }

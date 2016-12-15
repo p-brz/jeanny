@@ -6,8 +6,8 @@
 
 
 Stream &Network::stream(){
-    return client;
-//    return Serial;
+//    return client;
+    return Serial;
 }
 
 void Network::setupServer(){
@@ -31,9 +31,9 @@ void Network::setupServer(){
 	server.begin();
 	Serial.println("Server started");
 	
-	waitClientConnect();
+//	waitClientConnect();
 
-//    Serial.println("Not waiting client");
+    Serial.println("Not waiting client");
 }
 
 void Network::setupClient(){
@@ -67,11 +67,19 @@ bool Network::waitTurn(int & timeoutMillis){
     Serial.print("Waiting for my turn...");
     int time = millis();
     while(!stream().available()){
-        if(millis() - time >= 500){
+        if(millis() - time >= 200){
             time = millis();
             Serial.print(".");
         }
+        if(!client.connected()){
+            Serial.println("Client disconnected");
+            delay(2000);
+            return false;
+        }
+        delay(20);
     }
+    
+    Serial.println("data available. Reading...");
     
     JBuffer jsonBuffer; 
     
@@ -105,14 +113,21 @@ bool Network::waitTurn(int & timeoutMillis){
 }
 
 void Network::sendChangeTurn(int timeoutMillis){
+    Serial.println("send change turn!");
+    
     JBuffer changeEvtBuffer;
     JsonObject & evt = changeEvtBuffer.createObject();
     
     evt["evt"] = "change_turn";
     evt["timeout"] = timeoutMillis;
     
-    evt.printTo(stream());  
+    evt.printTo(stream());
+    stream().println();  
     stream().flush();
+    
+    evt.printTo(Serial);
+    Serial.println();
+    
 }
 
 void Network::notifyEndGame(){
@@ -122,6 +137,7 @@ void Network::notifyEndGame(){
     evt["evt"] = "end_game";
     
     evt.printTo(stream()); 
+    stream().println();
     stream().flush(); 
 }
 

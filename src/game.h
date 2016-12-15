@@ -26,8 +26,8 @@ private:
     int timeoutCounter;
     int perTurnDifficultyIncrease;
     int difficultyLimit;
-
     int myTurnCount = 0;
+    int startButtonPreviousState = -1;
 
     Network * peer;
 public:

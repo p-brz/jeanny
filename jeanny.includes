@@ -2,5 +2,6 @@
 ~/.platformio/packages/framework-arduinoespressif8266/variants/generic
 ~/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266WiFi/src/
 ~/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266WebServer/src
+.piolibdeps/WebSockets_ID549/src
 .piolibdeps/ArduinoJson_ID64/include
 src

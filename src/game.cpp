@@ -1,16 +1,18 @@
 #include "game.h"
 #include "pins.h"
 
+#define INIT_TIMEOUT 4000
+
 Game::Game(Network * peer)
     : peer(peer)
 {
     //this->isServer = isServer;
     //this->buzzer = Buzzer;
 
-    this->timeoutMilis = 2000;
+    this->timeoutMilis = INIT_TIMEOUT;
     this->timeoutCounter = 0;
-    this->perTurnDifficultyIncrease = 200;
-    this->difficultyLimit = 300;
+    this->perTurnDifficultyIncrease = 100;
+    this->difficultyLimit = 350;
 }
 
 /************************************
@@ -34,19 +36,15 @@ void Game::turnOffAllLeds()
 void Game::runState(){
     switch (this->state) {
         case State::waitPlayer:
-            Serial.println("State waitPlayer");
             this->waitPlayer();
             break;
         case State::waitTurn:
-            Serial.println("State waitTurn");
             this->waitTurn();
             break;
         case State::myTurn:
-            Serial.println("State myTurn");
             this->myTurn();
             break;
         case State::waitKey:
-            Serial.println("State waitKey");
             this->waitKey();
             break;
     }
@@ -60,21 +58,25 @@ void Game::runState(){
 * State methods                     *
 *************************************/
 void Game::waitPlayer(){
-    Serial.println("Waiting player");
-    digitalWrite(ledPins[0], HIGH);
     
     int state = digitalRead(buttonsPins[0]);
-    int previous = state;
-    while(!(state == LOW && previous == HIGH)){
-        previous = state;
+    digitalWrite(ledPins[0], HIGH);
+    if(startButtonPreviousState == -1){
+        Serial.println("Waiting player");
+        startButtonPreviousState = state;
+    }
+    
+    // Stuck 1
+    if(!(state == LOW && startButtonPreviousState == HIGH)){
+        startButtonPreviousState = state;
         state = digitalRead(buttonsPins[0]);
         delay(20);
+    }else{
+        startButtonPreviousState = -1;
+        Serial.println("Start game!");
+        digitalWrite(ledPins[0], LOW);
+        this->changeState(State::myTurn);
     }
-
-    Serial.println("Start game!");
-
-    digitalWrite(ledPins[0], LOW);
-    this->changeState(State::myTurn);
 }
 
 /* Jogador recebe a vez e deve decidir o que fazer com ela */
@@ -92,36 +94,39 @@ void Game::myTurn(){
 
 /* Espera o usuário apertar o botão ou timeout */
 void Game::waitKey(){
-    Serial.println("Waiting key");
     int otherButton = (this->currentOnPosition - 1) * -1;
     int completedLoop = 0;
     int wasSuccessful = 0;
 
-    while(completedLoop == 0){
-        delay(10);
-        int currentButtonInput = digitalRead(buttonsPins[this->currentOnPosition]);
-        int incorrectButtonInput = digitalRead(buttonsPins[otherButton]);
+    delay(10);
+    int currentButtonInput = digitalRead(buttonsPins[this->currentOnPosition]);
+    int incorrectButtonInput = digitalRead(buttonsPins[otherButton]);
 
-        if(incorrectButtonInput == HIGH){
+    if(incorrectButtonInput == HIGH){
+        completedLoop = 1;
+        wasSuccessful = 0;
+    }else if(currentButtonInput == HIGH){
+        completedLoop = 1;
+        wasSuccessful = 1;
+    }else{
+        Serial.print("Time: ");
+        Serial.print(timeoutCounter);
+        Serial.print("/");
+        Serial.println(timeoutMilis);
+        this->timeoutCounter += 10;
+        if(this->timeoutCounter > this->timeoutMilis){
             completedLoop = 1;
             wasSuccessful = 0;
-        }else if(currentButtonInput == HIGH){
-            completedLoop = 1;
-            wasSuccessful = 1;
-        }else{
-            this->timeoutCounter += 10;
-            if(this->timeoutCounter > this->timeoutMilis){
-                completedLoop = 1;
-                wasSuccessful = 0;
-            }
         }
     }
-
-    if(wasSuccessful == 1){
-        this->pressSuccess();
-    }else{
-        this->myTurnCount = 0;
-        this->gameOver();
+    
+    if(completedLoop == 1){
+        if(wasSuccessful == 1){
+            this->pressSuccess();
+        }else{
+            this->myTurnCount = 0;
+            this->gameOver();
+        }
     }
 }
 
@@ -142,13 +147,22 @@ void Game::blinkRandomLed(){
 void Game::pressSuccess(){
      this->buzzer.playNumberedMelody(this->currentOnPosition, 250);
      turnOffAllLeds();
-     delay(300);
+     delay(timeoutMilis / 4);
+     
+     if(timeoutMilis >= difficultyLimit){
+        timeoutMilis -= perTurnDifficultyIncrease;
+     }
+     
+     if(timeoutMilis < difficultyLimit){
+        timeoutMilis = difficultyLimit;
+     }
      
      this->changeState(State::myTurn);
 }
 
 /* Reinicia o jogo */
 void Game::resetGame(){
+    timeoutMilis = INIT_TIMEOUT;
     Serial.println("reset game!");
     
     if(this->isServer){
@@ -162,10 +176,12 @@ void Game::resetGame(){
 void Game::gameOver(){
     Serial.println("game over!!");
     
-     this->buzzer.playNumberedMelody(3, 500);
-     this->buzzer.playNumberedMelody(3, 500);
-     this->buzzer.playNumberedMelody(3, 500);
-
+    this->buzzer.playNumberedMelody(3, 500);
+    this->buzzer.playNumberedMelody(3, 500);
+    this->buzzer.playNumberedMelody(3, 500);
+    
+    timeoutMilis = INIT_TIMEOUT;
+    
     this->turnOffAllLeds();
     
     delay(300);
@@ -195,7 +211,7 @@ void Game::changeTurn(){
     // TODO: Enviar requisição para o outro jogador, passando a vez
     // TODO: Entrar no estado wait Turn
     
-    peer->sendChangeTurn(timeoutMilis);
+//    peer->sendChangeTurn(timeoutMilis);
 }
 
 /* [State] Estou esperando a minha vez */
@@ -204,10 +220,10 @@ void Game::waitTurn(){
     // TODO: Escutar requisições do tipo "você venceu"
     // Receber timeout atual
     
+    // Stuck 3
+//    while(!peer->waitTurn(timeoutMilis)){
     
-    while(!peer->waitTurn(timeoutMilis)){
-    
-    }
+//    }
     myTurnCount = 0;
     this->changeState(State::myTurn);
 }

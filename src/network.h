@@ -2,7 +2,9 @@
 #define NETWORK_H
 
 #include <ESP8266WiFi.h>
-
+#include <Hash.h>
+#include <WebSocketsServer.h>
+#include <WebSocketsClient.h>
 #include "ArduinoJson.h"
 
 #define PORT 8266
@@ -23,6 +25,8 @@ public:
 
     WiFiServer server{PORT};
     WiFiClient client;
+    WebSocketsServer webSocket{81};
+//    WebSocketsClient webSocketClient{81};
 
     Stream & stream();
 

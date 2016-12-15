@@ -1,6 +1,7 @@
 #ifndef _GAME_H_
 #define _GAME_H_
 
+#include "Arduino.h"
 #include "buzzer.h"
 
 const int startDifficulty = 2000;

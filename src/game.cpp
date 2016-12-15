@@ -4,7 +4,7 @@
 Game::Game(int isServer){
     //this->isServer = isServer;
     //this->buzzer = Buzzer;
-    if(this->isServer){
+    if(this->isServer == 0){
         this->state = State::waitPlayer;
     }else{
         this->state = State::waitTurn;
@@ -51,6 +51,7 @@ void Game::waitPlayer(){
     int user_started_game = LOW;
     digitalWrite(ledPins[0], HIGH);
 
+    Serial.println("- Waiting game start");
     while(user_started_game == LOW){
         user_started_game = digitalRead(buttonsPins[0]);
     }
@@ -151,7 +152,7 @@ void Game::gameOver(){
 * TODO methods                      *
 *************************************/
 /* [Request and Network] Envia a requisição de fim de jogo */
-void notifyEndGame(){
+void Game::notifyEndGame(){
     // TODO: Enviar notificação para o outro jogador, sinalizando fim de jogo
 }
 

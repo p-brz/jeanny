@@ -10,19 +10,18 @@
 Game game(1);
 
 void setupInterface(){
-    for(int i=0;i < 3; ++i){
+    for(int i=0;i < 2; ++i){
         pinMode(buttonsPins[i], INPUT);
         pinMode(ledPins[i], OUTPUT);
     }
 }
 
 void setup() {
-	delay(5000);
 	Serial.begin(115200);
-
 	setupInterface();
 }
 
 void loop() {
-    game.runState();
+    Serial.println("- Running main loop");
+    // game.runState();
 }

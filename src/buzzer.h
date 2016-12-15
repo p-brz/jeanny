@@ -1,6 +1,7 @@
 #ifndef _BUZZER_H_
 #define _BUZZER_H_
 
+#include "Arduino.h"
 #include "pitches.h"
 
 class Buzzer{

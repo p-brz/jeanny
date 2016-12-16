@@ -2,9 +2,6 @@
 #define NETWORK_H
 
 #include <ESP8266WiFi.h>
-#include <Hash.h>
-#include <WebSocketsServer.h>
-#include <WebSocketsClient.h>
 #include "ArduinoJson.h"
 #include <functional>
 
@@ -66,6 +63,8 @@ public:
     void clientUpdate();
     
     void checkConnectionWithClient();
+    
+    void sendEvent(JsonObject& evt);
     
 protected:
     void waitClientConnect();

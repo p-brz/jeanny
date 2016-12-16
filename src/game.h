@@ -12,6 +12,7 @@ enum class State{
     waitPlayer,
     waitTurn,
     myTurn,
+    blinkLed,
     waitKey
 };
 
@@ -54,6 +55,8 @@ public:
     decidir o que fazer com ela */
     void myTurn();
 
+    void blinkLed();
+
     /* Passa a vez para o outro user */
     void changeTurn();
 
@@ -67,7 +70,7 @@ public:
     void resetGame();
 
     /* Fim de jogo */
-    void gameOver();
+    void gameOver(int cause);
 
     /* Sucesso em apertar o botão do led */
     void pressSuccess();
@@ -78,7 +81,8 @@ public:
     /* Executa a função de estado atual */
     void runState();
 
-    void turnOffAllLeds();
+    void turnAllLeds(int state);
+    const char * stateToStr(State state);
 };
 
 #endif

@@ -4,11 +4,11 @@
 
 #include <string.h>
 
-#define PING_TIME 2000
+#define PING_TIME 10000
 
 Stream &Network::stream(){
-//    return client;
-    return Serial;
+    return client;
+//    return Serial;
 }
 
 void Network::setupServer(){
@@ -57,7 +57,7 @@ void Network::update(){
     if(isServer){
         serverUpdate();
     }
-    else if(millis() - lastTimeRequest > 2000){
+    else {
         clientUpdate();
     }
 }
@@ -155,13 +155,19 @@ void Network::sendChangeTurn(int timeoutMillis){
     evt["evt"] = "change_turn";
     evt["timeout"] = timeoutMillis;
     
-    evt.printTo(stream());
-    stream().println();  
-    stream().flush();
+    sendEvent(evt);
+}
+
+void Network::sendEvent(JsonObject& evt)
+{
+    evt.printTo(stream()); 
+    stream().println();
+    stream().flush();   
     
-    evt.printTo(Serial);
-    Serial.println();
-    
+    Serial.print("sent evt:");
+    Serial.println((const char *)evt["evt"]);
+//    evt.printTo(Serial);
+//    Serial.println();
 }
 
 void Network::notifyEndGame(){
@@ -169,8 +175,5 @@ void Network::notifyEndGame(){
     JsonObject & evt = changeEvtBuffer.createObject();
     
     evt["evt"] = "end_game";
-    
-    evt.printTo(stream()); 
-    stream().println();
-    stream().flush(); 
+    sendEvent(evt); 
 }
